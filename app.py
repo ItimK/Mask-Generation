@@ -33,5 +33,7 @@ demo = gr.Interface(
     description="Upload an image to remove background and get a B&W mask."
 )
 
-if __name__ == "__main__":
-    demo.launch()
+if __name__ == '__main__':
+    port = int(os.environ.get("PORT", 7860))
+    app.run(host='0.0.0.0', port=port)
+
