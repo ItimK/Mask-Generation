@@ -163,6 +163,9 @@ if __name__ == '__main__':
     @app.route('/')
     def home():
         return "Hello from the cloud!"
-
+    
     if __name__ == '__main__':
-        app.run(host='0.0.0.0', port=10000)
+        # Use Render's assigned port, default to 5000 locally
+        port = int(os.environ.get("PORT", 5000))
+        app.run(host='0.0.0.0', port=port)
+
