@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Alpha Mask Generator - Batch Processing</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .upload-section {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            margin-bottom: 30px;
+        }
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 60px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #f8f9ff;
+        }
+
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: #f0f2ff;
+        }
+
+        .upload-area.dragover {
+            border-color: #764ba2;
+            background: #e8ebff;
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+
+        .upload-text {
+            font-size: 1.2em;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .upload-hint {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 15px;
+        }
+
+        .file-count {
+            display: none;
+            background: #667eea;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        .file-count.show {
+            display: inline-block;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 15px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+            background: white;
+            border-radius: 20px;
+            margin-bottom: 30px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #f0f0f0;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .results {
+            display: none;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .results.show {
+            display: block;
+        }
+
+        .batch-actions {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9ff;
+            border-radius: 10px;
+        }
+
+        .batch-actions h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .download-all-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1.1em;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+            margin: 5px;
+        }
+
+        .download-all-btn:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        .result-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            padding: 20px;
+            background: white;
+        }
+
+        .result-card.error {
+            border-color: #ff5252;
+            background: #ffebee;
+        }
+
+        .result-card h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .result-images {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .result-image-container {
+            text-align: center;
+        }
+
+        .result-image-container p {
+            font-size: 0.8em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .result-image {
+            width: 100%;
+            height: 150px;
+            object-fit: contain;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .checkerboard {
+            background-image: 
+                linear-gradient(45deg, #ccc 25%, transparent 25%),
+                linear-gradient(-45deg, #ccc 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #ccc 75%),
+                linear-gradient(-45deg, transparent 75%, #ccc 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            padding: 5px;
+            border-radius: 10px;
+        }
+
+        .download-btns {
+            display: flex;
+            gap: 10px;
+        }
+
+        .download-btn {
+            flex: 1;
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 0.85em;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .download-btn:hover {
+            background: #5568d3;
+            transform: translateY(-1px);
+        }
+
+        .error-message {
+            color: #d32f2f;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .error {
+            display: none;
+            background: #ff5252;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .new-upload-btn {
+            margin-top: 30px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎨 AI Alpha Mask Generator</h1>
+            <p>Remove backgrounds and create masks - Now with batch processing!</p>
+        </div>
+
+        <div class="upload-section">
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📤</div>
+                <div class="upload-text">Click or drag images here</div>
+                <div class="upload-hint">Upload multiple files at once • Supports JPG, PNG, WebP</div>
+                <input type="file" id="fileInput" accept="image/*" multiple>
+                <div class="file-count" id="fileCount"></div>
+            </div>
+            <div style="text-align: center;">
+                <button class="btn" id="processBtn" style="display: none;">Process All Images</button>
+            </div>
+        </div>
+
+        <div class="error" id="error"></div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <h3 id="loadingText">Processing your images...</h3>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill">0%</div>
+            </div>
+            <p id="progressText">Preparing...</p>
+        </div>
+
+        <div class="results" id="results">
+            <div class="batch-actions">
+                <h3>✨ Processing Complete!</h3>
+                <p style="color: #666; margin-bottom: 15px;">Successfully processed <span id="successCount">0</span> image(s)</p>
+                <a href="#" id="downloadAllBtn" class="download-all-btn">📦 Download All as ZIP</a>
+            </div>
+            
+            <div class="results-grid" id="resultsGrid"></div>
+
+            <div class="new-upload-btn">
+                <button class="btn" onclick="location.reload()">Upload More Images</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileCount = document.getElementById('fileCount');
+        const processBtn = document.getElementById('processBtn');
+        const loading = document.getElementById('loading');
+        const results = document.getElementById('results');
+        const errorDiv = document.getElementById('error');
+        const resultsGrid = document.getElementById('resultsGrid');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+
+        let selectedFiles = [];
+
+        // Click to upload
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        // Drag and drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+            if (files.length > 0) {
+                selectedFiles = files;
+                updateFileCount();
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            selectedFiles = Array.from(e.target.files);
+            updateFileCount();
+        });
+
+        function updateFileCount() {
+            if (selectedFiles.length > 0) {
+                fileCount.textContent = `${selectedFiles.length} file(s) selected`;
+                fileCount.classList.add('show');
+                processBtn.style.display = 'inline-block';
+            }
+        }
+
+        processBtn.addEventListener('click', handleFiles);
+
+        async function handleFiles() {
+            if (selectedFiles.length === 0) return;
+
+            errorDiv.classList.remove('show');
+            loading.classList.add('show');
+            results.classList.remove('show');
+            processBtn.disabled = true;
+
+            const formData = new FormData();
+            selectedFiles.forEach(file => {
+                formData.append('files[]', file);
+            });
+
+            progressFill.style.width = '0%';
+            progressFill.textContent = '0%';
+            progressText.textContent = 'Uploading files...';
+
+            try {
+                // Simulate upload progress
+                let progress = 0;
+                const progressInterval = setInterval(() => {
+                    progress += 5;
+                    if (progress <= 90) {
+                        progressFill.style.width = progress + '%';
+                        progressFill.textContent = progress + '%';
+                    }
+                }, 200);
+
+                const response = await fetch('/process', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                clearInterval(progressInterval);
+                progressFill.style.width = '100%';
+                progressFill.textContent = '100%';
+
+                const data = await response.json();
+
+                if (data.success) {
+                    displayResults(data.results, data.batch_id);
+                    loading.classList.remove('show');
+                    results.classList.add('show');
+                } else {
+                    showError(data.error || 'Processing failed');
+                    loading.classList.remove('show');
+                }
+            } catch (error) {
+                showError('Connection error: ' + error.message);
+                loading.classList.remove('show');
+            }
+
+            processBtn.disabled = false;
+        }
+
+        function displayResults(resultsList, batchId) {
+            resultsGrid.innerHTML = '';
+            let successCount = 0;
+
+            resultsList.forEach((result, index) => {
+                const card = document.createElement('div');
+                card.className = 'result-card';
+
+                if (result.error) {
+                    card.classList.add('error');
+                    card.innerHTML = `
+                        <h3>❌ ${result.filename}</h3>
+                        <div class="error-message">${result.error}</div>
+                    `;
+                } else {
+                    successCount++;
+                    card.innerHTML = `
+                        <h3>✅ ${result.filename}</h3>
+                        <div class="result-images">
+                            <div class="result-image-container">
+                                <p>Alpha Channel</p>
+                                <div class="checkerboard">
+                                    <img src="${result.alpha_preview}" class="result-image" alt="Alpha">
+                                </div>
+                            </div>
+                            <div class="result-image-container">
+                                <p>B&W Mask</p>
+                                <img src="${result.mask_preview}" class="result-image" alt="Mask">
+                            </div>
+                        </div>
+                        <div class="download-btns">
+                            <a href="/download/${result.alpha_path}" class="download-btn">⬇️ Alpha PNG</a>
+                            <a href="/download/${result.mask_path}" class="download-btn">⬇️ B&W Mask</a>
+                        </div>
+                    `;
+                }
+
+                resultsGrid.appendChild(card);
+            });
+
+            document.getElementById('successCount').textContent = successCount;
+            document.getElementById('downloadAllBtn').href = `/download-batch/${batchId}`;
+        }
+
+        function showError(message) {
+            errorDiv.textContent = '❌ ' + message;
+            errorDiv.classList.add('show');
+        }
+    </script>
+</body>
+</html>
