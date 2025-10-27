@@ -147,17 +147,34 @@ if __name__ == '__main__':
     print("\n" + "="*50)
     print("🚀 REMBG Web UI Server Starting...")
     print("="*50)
-    print("\n📱 Open in your browser:")
-    print("   Local:    http://localhost:5000")
-    print("   Network:  http://YOUR_IP:5000")
+    print("\n📱 Server starting...")
     print("\n💡 Features:")
     print("   ✅ Upload multiple images at once")
     print("   ✅ Process them all automatically")
     print("   ✅ Download individually or as ZIP")
-    print("\n💡 Share with others on the same network!")
     print("="*50 + "\n")
     
-    # Run on all network interfaces so others can access it
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
+    # Get port from environment variable (Render provides this)
+    port = int(os.environ.get('PORT', 10000))
+    
+    # Run on all network interfaces
+    app.run(host='0.0.0.0', port=port, debug=False)
+```
 
+**Key changes:**
+
+1. ✅ **Removed duplicate Flask app initialization** (you had it twice at the bottom)
+2. ✅ **Fixed port binding** - Now reads from `PORT` environment variable (Render requires this)
+3. ✅ **Set debug=False** for production
+
+**Also make sure your `templates` folder contains the `index.html` file!**
+
+Your folder structure should be:
+```
+your-project/
+├── app.py
+├── requirements.txt
+├── templates/
+│   └── index.html
+├── uploads/ (auto-created)
+└── outputs/ (auto-created)
